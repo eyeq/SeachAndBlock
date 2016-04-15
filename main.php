@@ -10,21 +10,34 @@ $accessTokenSecret = "xxx";
 
 $connection = new TwitterOAuth($consumerKey, $consumerSecret, $accessToken, $accessTokenSecret);
 
-$key = "xxx";
-$count = 10;
+define('KEYS_FILE', './keys.txt');
+
+$keys = array();
 $max_read = 10000;
 
-echo "Started.\n";
+$file = fopen(KEYS_FILE, "r");
+while(!feof($file)) {
+	$keys[] = rtrim(fgets($file));
+}
+fclose($file);
 
-for($i = 0; $i < $count; ++$i) {
+$i = 0;
+foreach($keys as $key) {
+	print("key is " . $key . ".\n");
+	print("Started.\n");
+	
 	$options = array("q" => $key, "count" => 100, "result_type" => "recent");
 
 	for($j = 0; $j < $max_read; ++$j) {
 		$statuses = $connection->get("search/tweets", $options);
 
-		echo count($statuses->statuses) . " tweets are fined\n";
+		if(!$statuses->statuses) {
+			print("No defined at " . $j+1 . " times.\n");
+			break;
+		}
+		print(count($statuses->statuses) . " tweets are fined\n");
 		foreach ($statuses->statuses as $result) {
-//			echo $result->user->screen_name . ": " . $result->text . "\n";
+//				print($result->user->screen_name . ": " . $result->text . "\n");
 		
 			$id = $result->user->id;
 			$connection->post("blocks/create", array("user_id" => $id));
@@ -32,13 +45,13 @@ for($i = 0; $i < $count; ++$i) {
 
 		$next_results = $statuses->search_metadata->next_results;
 		if(!$next_results) {
-			echo "No defined at " . $j+1 . " times.\n";
+			print("No defined at " . $j+1 . " times.\n");
 			break;
 		}
 		parse_str($next_results, $options);
 	}
 }
 
-echo "Finished.\n";
+print("Finished.\n");
 
 ?>
